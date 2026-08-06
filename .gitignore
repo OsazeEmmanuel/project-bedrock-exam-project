@@ -1,0 +1,20 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Sensitive files
+*.tfvars
+*.tfvars.json
+.env
+.env.*
+
+# Kubernetes secrets
+*-secret.yaml
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/
