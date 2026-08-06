@@ -16,3 +16,20 @@ module "networking" {
     "10.0.12.0/24"
   ]
 }
+
+module "eks" {
+  source = "./modules/eks"
+
+  cluster_name    = "project-bedrock-cluster"
+  cluster_version = "1.34"
+
+  vpc_id = module.networking.vpc_id
+
+  private_subnet_ids = module.networking.private_subnet_ids
+
+  node_instance_type = "t3.medium"
+
+  desired_nodes = 2
+  min_nodes     = 2
+  max_nodes     = 3
+}
