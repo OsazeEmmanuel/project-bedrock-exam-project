@@ -33,3 +33,7 @@ module "eks" {
   min_nodes     = 2
   max_nodes     = 3
 }
+
+module "storage" {
+  source = "./modules/storage"
+}

@@ -18,3 +18,13 @@ crash.*.log
 .DS_Store
 .vscode/
 .idea/
+
+# Terraform generated files
+*.tfplan
+
+
+# Generated Lambda package
+terraform/modules/storage/lambda.zip
+
+# Local test files
+terraform/test-image.jpg
