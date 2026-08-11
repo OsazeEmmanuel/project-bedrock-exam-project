@@ -52,3 +52,14 @@ module "database" {
   mysql_username    = "catalogadmin"
   postgres_username = "ordersadmin"
 }
+
+module "security" {
+  source = "./modules/security"
+
+  cluster_name = module.eks.cluster_name
+
+  assets_bucket_arn = module.storage.assets_bucket_arn
+
+  developer_username   = "bedrock-dev-view"
+  kubernetes_namespace = "retail-app"
+}
