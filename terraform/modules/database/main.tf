@@ -21,8 +21,8 @@ resource "aws_vpc_security_group_ingress_rule" "mysql_from_eks" {
   security_group_id            = aws_security_group.database.id
   referenced_security_group_id = var.eks_security_group_id
 
-  from_port = 3306
-  to_port   = 3306
+  from_port   = 3306
+  to_port     = 3306
   ip_protocol = "tcp"
 
   description = "Allow MySQL traffic from EKS"
@@ -36,8 +36,8 @@ resource "aws_vpc_security_group_ingress_rule" "postgres_from_eks" {
   security_group_id            = aws_security_group.database.id
   referenced_security_group_id = var.eks_security_group_id
 
-  from_port = 5432
-  to_port   = 5432
+  from_port   = 5432
+  to_port     = 5432
   ip_protocol = "tcp"
 
   description = "Allow PostgreSQL traffic from EKS"
@@ -76,7 +76,7 @@ resource "aws_db_subnet_group" "this" {
 ############################################
 
 resource "random_password" "mysql" {
-  length  = 24
+  length = 24
 
   special = true
 
