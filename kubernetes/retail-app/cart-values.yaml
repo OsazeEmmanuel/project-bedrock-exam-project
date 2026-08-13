@@ -1,0 +1,18 @@
+replicaCount: 1
+
+app:
+  persistence:
+    provider: dynamodb
+    dynamodb:
+      tableName: project-bedrock-cart
+      createTable: true
+
+dynamodb:
+  create: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

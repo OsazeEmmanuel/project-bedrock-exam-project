@@ -59,7 +59,30 @@ module "security" {
   cluster_name = module.eks.cluster_name
 
   assets_bucket_arn = module.storage.assets_bucket_arn
+  #  assets_bucket_arn  = module.assets.bucket_arn
+  dynamodb_table_arn = module.dynamodb.table_arn
 
   developer_username   = "bedrock-dev-view"
   kubernetes_namespace = "retail-app"
+}
+
+
+module "cache" {
+  source = "./modules/cache"
+
+  vpc_id = module.networking.vpc_id
+
+  private_subnet_ids = module.networking.private_subnet_ids
+
+  eks_security_group_id = module.eks.cluster_security_group_id
+
+  cache_name = "project-bedrock-redis"
+  node_type  = "cache.t3.micro"
+}
+
+module "dynamodb" {
+  source = "./modules/dynamodb"
+
+  table_name  = "Items"
+  project_tag = "tinyuka-2025-capstone"
 }

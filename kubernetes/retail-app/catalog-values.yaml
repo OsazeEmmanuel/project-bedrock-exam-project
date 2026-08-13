@@ -1,0 +1,23 @@
+replicaCount: 1
+
+app:
+  persistence:
+    provider: mysql
+    endpoint: "project-bedrock-catalog.cez422q4c41k.us-east-1.rds.amazonaws.com:3306"
+    database: catalog
+    secret:
+      create: false
+      name: catalog-db
+
+mysql:
+  create: false
+
+search:
+  enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    memory: 256Mi

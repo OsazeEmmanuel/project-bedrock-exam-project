@@ -1,21 +1,26 @@
 cart:
   fullnameOverride: carts
 
+  app:
+    persistence:
+      provider: dynamodb
+
+    dynamodb:
+      tableName: Items
+      createTable: false
+
 catalog:
   fullnameOverride: catalog
 
 checkout:
   fullnameOverride: checkout
-  retail:
-    checkout:
-      endpoints:
-        orders: http://orders:80
 
 orders:
   fullnameOverride: orders
 
 ui:
   fullnameOverride: ui
+
   app:
     endpoints:
       catalog: http://catalog:80

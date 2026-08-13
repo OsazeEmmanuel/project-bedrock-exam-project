@@ -19,3 +19,8 @@ variable "kubernetes_namespace" {
   type        = string
   default     = "retail-app"
 }
+
+variable "dynamodb_table_arn" {
+  description = "ARN of the DynamoDB Items table"
+  type        = string
+}
