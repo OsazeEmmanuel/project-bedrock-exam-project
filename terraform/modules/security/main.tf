@@ -103,3 +103,101 @@ resource "aws_eks_access_policy_association" "developer_view" {
     aws_eks_access_entry.developer
   ]
 }
+
+############################################
+# Cart Service Pod Identity
+############################################
+
+data "aws_iam_policy_document" "cart_pod_identity_trust" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession"
+    ]
+
+    principals {
+      type = "Service"
+
+      identifiers = [
+        "pods.eks.amazonaws.com"
+      ]
+    }
+  }
+}
+
+resource "aws_iam_role" "cart" {
+  name = "project-bedrock-cart-role"
+
+  assume_role_policy = data.aws_iam_policy_document.cart_pod_identity_trust.json
+
+  tags = {
+    Name    = "project-bedrock-cart-role"
+    Project = "tinyuka-2025-capstone"
+  }
+}
+
+data "aws_iam_policy_document" "cart_dynamodb" {
+  statement {
+    sid    = "CartDynamoDBAccess"
+    effect = "Allow"
+
+    actions = [
+      "dynamodb:DescribeTable",
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:Scan"
+    ]
+
+    resources = [
+      "arn:aws:dynamodb:us-east-1:470895880196:table/Items"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "cart_dynamodb" {
+  name = "project-bedrock-cart-dynamodb"
+  role = aws_iam_role.cart.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [{
+      Sid    = "CartDynamoDBAccess"
+      Effect = "Allow"
+
+      Action = [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:Query",
+        "dynamodb:Scan",
+        "dynamodb:DescribeTable"
+      ]
+
+      Resource = [
+        var.dynamodb_table_arn,
+        "${var.dynamodb_table_arn}/index/*"
+      ]
+    }]
+  })
+}
+
+
+resource "aws_eks_pod_identity_association" "cart" {
+  cluster_name    = var.cluster_name
+  namespace       = var.kubernetes_namespace
+  service_account = "carts"
+  role_arn        = aws_iam_role.cart.arn
+
+  depends_on = [
+    aws_iam_role_policy.cart_dynamodb
+  ]
+}
+
+
