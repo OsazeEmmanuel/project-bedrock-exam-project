@@ -19,9 +19,18 @@ resource "aws_dynamodb_table" "items" {
   }
 
   global_secondary_index {
-    name            = "idx_global_customerId"
-    hash_key        = "customerId"
-    range_key       = "id"
+    name = "idx_global_customerId"
+
+    key_schema {
+      attribute_name = "customerId"
+      key_type       = "HASH"
+    }
+
+    key_schema {
+      attribute_name = "id"
+      key_type       = "RANGE"
+    }
+
     projection_type = "ALL"
   }
 

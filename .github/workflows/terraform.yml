@@ -21,6 +21,11 @@ env:
 
 jobs:
 
+  # ============================================================
+  # TERRAFORM PLAN
+  # Runs when a Pull Request targets main
+  # ============================================================
+
   terraform-plan:
     name: Terraform Plan
     if: github.event_name == 'pull_request'
@@ -33,8 +38,63 @@ jobs:
 
     steps:
 
+      # --------------------------------------------------------
+      # Checkout
+      # --------------------------------------------------------
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # TEMPORARY OIDC DEBUG
+      # This helps us determine the exact GitHub OIDC subject
+      # being presented to AWS.
+      # --------------------------------------------------------
+
+      - name: Debug GitHub OIDC claims
+        run: |
+          TOKEN=$(curl -sSf \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" \
+            | jq -r '.value')
+
+          PAYLOAD=$(echo "$TOKEN" | cut -d '.' -f2)
+
+          PAYLOAD="$PAYLOAD" python3 - <<'PY'
+          import os
+          import json
+          import base64
+
+          payload = os.environ["PAYLOAD"]
+
+          payload += "=" * (-len(payload) % 4)
+
+          claims = json.loads(
+              base64.urlsafe_b64decode(payload).decode()
+          )
+
+          print("======================================")
+          print("GitHub OIDC Claims")
+          print("======================================")
+
+          for key in [
+              "iss",
+              "aud",
+              "sub",
+              "repository",
+              "repository_id",
+              "repository_owner",
+              "repository_owner_id",
+              "event_name"
+          ]:
+              print(f"{key}: {claims.get(key)}")
+
+          print("======================================")
+          PY
+
+      # --------------------------------------------------------
+      # AWS OIDC AUTHENTICATION
+      # --------------------------------------------------------
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.3
@@ -42,24 +102,39 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # --------------------------------------------------------
+      # Verify AWS authentication
+      # --------------------------------------------------------
+
       - name: Verify AWS identity
         run: |
           aws sts get-caller-identity
+
+      # --------------------------------------------------------
+      # Terraform
+      # --------------------------------------------------------
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Format Check
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform fmt -check -recursive
+        run: |
+          terraform fmt -check -recursive
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: |
+          terraform init -input=false
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform validate
+        run: |
+          terraform validate
+
+      # --------------------------------------------------------
+      # Terraform Plan
+      # --------------------------------------------------------
 
       - name: Terraform Plan
         id: plan
@@ -74,6 +149,10 @@ jobs:
             -no-color \
             tfplan > plan.txt
 
+      # --------------------------------------------------------
+      # Upload Plan Artifact
+      # --------------------------------------------------------
+
       - name: Upload Terraform Plan
         uses: actions/upload-artifact@v4
         with:
@@ -82,6 +161,10 @@ jobs:
             terraform/tfplan
             terraform/plan.txt
           retention-days: 5
+
+      # --------------------------------------------------------
+      # Comment Plan on Pull Request
+      # --------------------------------------------------------
 
       - name: Comment Terraform Plan on PR
         uses: actions/github-script@v7
@@ -107,8 +190,8 @@ jobs:
             const body = [
               '## Terraform Plan',
               '',
-              `<details>`,
-              `<summary>Show Terraform Plan</summary>`,
+              '<details>',
+              '<summary>Show Terraform Plan</summary>',
               '',
               '```terraform',
               plan,
@@ -151,6 +234,11 @@ jobs:
             }
 
 
+  # ============================================================
+  # TERRAFORM APPLY
+  # Runs after changes are pushed/merged into main
+  # ============================================================
+
   terraform-apply:
     name: Terraform Apply
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -162,8 +250,16 @@ jobs:
 
     steps:
 
+      # --------------------------------------------------------
+      # Checkout
+      # --------------------------------------------------------
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # --------------------------------------------------------
+      # AWS OIDC AUTHENTICATION
+      # --------------------------------------------------------
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6.2.3
@@ -171,20 +267,34 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # --------------------------------------------------------
+      # Verify AWS authentication
+      # --------------------------------------------------------
+
       - name: Verify AWS identity
         run: |
           aws sts get-caller-identity
+
+      # --------------------------------------------------------
+      # Terraform
+      # --------------------------------------------------------
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: |
+          terraform init -input=false
 
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform validate
+        run: |
+          terraform validate
+
+      # --------------------------------------------------------
+      # Terraform Apply
+      # --------------------------------------------------------
 
       - name: Terraform Apply
         working-directory: ${{ env.TF_WORKING_DIR }}

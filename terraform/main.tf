@@ -1,3 +1,4 @@
+## CI/CD pipeline test - Terraform plan validation
 module "networking" {
   source = "./modules/networking"
 
